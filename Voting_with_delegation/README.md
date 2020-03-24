@@ -1,9 +1,11 @@
 # Voting with delegation
-> Descrizione algoritmo e metodi
+> Descrizione algoritmo e metodi \
+> mingo97
 
 
 ## Costruttore
-
+Chi fa il deploy del codice sulla BC, diventa chairman (presidente del voto). L'istruzione `voters[chairperson].weight = 1;` va così interpretata: l'array `voters` è indicizzato con l'indirizzo del singolo `Voter`; l'attributo `weight` indica quante deleghe da parte di altri si hanno, per tale motivo nel momento del deploy il chairman lo ha pari a 1. \
+Il ciclo `for` serve ad organizzare nella lista `proposals` gli attributi passati al costruttore. Il metodo `push` permette di aggiungere un elemento alla coda. La lista è indicizzata da 0 a n candidati.
 
 ```solidity
 constructor(bytes32[] memory proposalNames) public {
@@ -20,6 +22,9 @@ constructor(bytes32[] memory proposalNames) public {
 ```
 
 ## Give Right To Vote
+Da il diritto di voto agli account in BC. Tale funzione può essere chiamata solo dal chairman, come si vede sul primo `require`. Come parametro si passa un address.  
+Se tale address ha gia votato si esce, se deve ancora farlo si attribuisce peso (weigth) al suo voto con l'istruzione `voters[voter].weight = 1;`. Se il peso è diverso da 0 significa che ha gia ricevuto il diritto di voto.
+
 ```solidity
     function giveRightToVote(address voter) public {
         require(
@@ -36,6 +41,10 @@ constructor(bytes32[] memory proposalNames) public {
 ```
 
 ## Delegate
+Un account può decidere di non votare e delegare il proprio voto all'address `to` passato come parametro.
+Si crea un `Voter` temporaneo che conterrà l'account di colui che ha invocato la funzione, cioè il delegante. Se questo ha gia votato si esce. Se questo vuol delegare se stesso si esce. 
+Il ciclo while evita che si formino cicli di deleghe: A->B->C->D->A.
+L'istruzione `sender.voted = true;` mi impedirà di votare in quanto ho delegato. Nota che se il delegato ha già votato, vado direttamente ad aggiungere il voto. In caso contrario aggiungo i pesi del delegante al delegato.
 ```solidity
 function delegate(address to) public {
         Voter storage sender = voters[msg.sender];
@@ -66,6 +75,7 @@ function delegate(address to) public {
 ```
 
 ## Vote
+Se si ha il diritto di voto (vedi primo `require`) e non si ha già votato, si setta il voto a TRUE, si registra l'address di chi si vuole votare nel campo `vote` e si assegnano i weight al `proposal`.
 ``` solidity
     function vote(uint proposal) public {
         Voter storage sender = voters[msg.sender];
@@ -79,6 +89,7 @@ function delegate(address to) public {
 ```
 
 ## Winning Proposal
+Si valuta tra i `proposal` chi ha maggiori voti. La funzione restituisce l'indice della struttura `proposals` a cui corrisponde il vincitore.
 ``` solidity
 function winningProposal() public view
             returns (uint winningProposal_)
@@ -94,6 +105,7 @@ function winningProposal() public view
 ```
 
 ## Winner Name
+Restituisce il nome in bytes32 del vincitore, individuato all'interno della struttura `proposals` tramite `winningProposal()`.
 ``` solidity
 function winnerName() public view
             returns (bytes32 winnerName_)
